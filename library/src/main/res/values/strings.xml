@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">LocalDownloadManager</string>
+    <string name="format_download_queue_progress">Downloading %1$d of %2$d</string>
+</resources>
