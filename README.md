@@ -103,7 +103,7 @@ public class DownloadHandlerService extends DownloadStatusService {
 ```
 
 
-2 - Alter your AndroidManifest with your receiver and service
+2 - Alter your AndroidManifest with your receiver
 
 ```xml
 <application>
