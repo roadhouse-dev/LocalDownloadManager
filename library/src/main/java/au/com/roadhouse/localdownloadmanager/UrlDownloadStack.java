@@ -12,7 +12,8 @@ import java.net.URL;
 import timber.log.Timber;
 
 /**
- * An implementation of DownloadHttpStack which
+ * An implementation of DownloadHttpStack which uses a UrlConnection to download a file. This
+ * stack supports file resuming if paused.
  */
 public class UrlDownloadStack implements DownloadHttpStack {
 
@@ -86,7 +87,7 @@ public class UrlDownloadStack implements DownloadHttpStack {
 
 
             //Resume not supported, delete file and starting again
-            if(urlConnection.getHeaderField("Accept-Ranges").equals("none") && startSize > 0) {
+            if(doesAcceptResume(startSize, urlConnection)) {
                 Timber.w("downloadFile: File resume not supported, deleting and redownloading");
                 //noinspection ResultOfMethodCallIgnored
                 file.delete();
@@ -129,6 +130,11 @@ public class UrlDownloadStack implements DownloadHttpStack {
         }
 
         return file;
+    }
+
+    private boolean doesAcceptResume(long startSize, HttpURLConnection urlConnection) {
+        return urlConnection.getHeaderField("Accept-Ranges") != null &&
+         urlConnection.getHeaderField("Accept-Ranges").equals("none") && startSize > 0;
     }
 
     /**
