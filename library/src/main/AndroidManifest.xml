@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application>
 
@@ -21,6 +22,17 @@
         <receiver android:name=".service.NetworkStateChangeReceiver">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".service.DownloadStateBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_COMPLETE"/>
+                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ITEM_COMPLETE"/>
+                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ERROR"/>
+                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_CANCELLED"/>
+                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_QUEUED"/>
             </intent-filter>
         </receiver>
 

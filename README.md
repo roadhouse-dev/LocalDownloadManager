@@ -67,10 +67,10 @@ public class DownloadHandlerService extends IntentService {
         if (LocalDownloadService.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) {
             DownloadTask downloadTask = (DownloadTask) intent.getSerializableExtra(DownloadService.EXTRA_DOWNLOAD_TASK);
             if(downloadTask.getStatus() != DownloadTask.INCOMPLETE) {
-                Log.d(TAG, "onHandleIntent: Copying files to cache");
+                Timber.d( "onHandleIntent: Copying files to cache");
                 onCopyToCache(intent);
             } else {
-                Log.d(TAG, "onHandleIntent: Error occurred, deleting files");
+                Timber.d( "onHandleIntent: Error occurred, deleting files");
                 onDownloadError(intent);
             }
         }
@@ -129,8 +129,8 @@ public class DownloadHandlerService extends IntentService {
        ...
         <receiver android:name=".service.OfflineFileStatusReceiver">
             <intent-filter>
-                <action android:name="com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_COMPLETE"/>
-                <action android:name="com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ERROR"/>
+                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_COMPLETE"/>
+                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ERROR"/>
             </intent-filter>
         </receiver>
 

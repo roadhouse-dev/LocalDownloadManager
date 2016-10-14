@@ -16,7 +16,6 @@ import timber.log.Timber;
  */
 public class UrlDownloadStack implements DownloadHttpStack {
 
-    private static final String TAG = "UrlDownloadStack";
     private static final int BUFFER_SIZE = 8192;
     private boolean mContinueDownload = false;
 
