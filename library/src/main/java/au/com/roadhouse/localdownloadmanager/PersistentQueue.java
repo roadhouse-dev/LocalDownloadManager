@@ -23,8 +23,6 @@ import timber.log.Timber;
 
 public class PersistentQueue<E extends Serializable> implements Queue<E> {
 
-    private static final String TAG = "PersistentQueue";
-
     private Queue<E> mInMemoryQueue;
     private final UpdateHandler mUpdateHandler;
     private File mFile;
@@ -141,8 +139,9 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
 
     @Override
     public E poll() {
+        E item = mInMemoryQueue.poll();
         updateFileStore();
-        return mInMemoryQueue.poll();
+        return item;
     }
 
     private void updateFileStore() {
@@ -190,6 +189,8 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
                 Timber.d("flushUpdates: thread was interrupted while waiting, reaquiring latch");
             }
         }
+
+        Timber.d("flushUpdates: Flush was successful");
     }
 
     private final class UpdateHandler extends Handler {
@@ -229,7 +230,7 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
             FileOutputStream fileOutputStream = new FileOutputStream(mFile);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
             objectOutputStream.writeObject(mInMemoryQueue);
-            Timber.d(TAG, "handleMessage: Updated persistent storage");
+            Timber.d("handleMessage: Updated persistent storage");
         } catch (IOException e) {
             e.printStackTrace();
         }
