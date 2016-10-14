@@ -442,8 +442,6 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
                 if (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING) {
                     mCurrentDownloadTask.setStatus(DownloadTask.FINISHED);
                     broadcastTaskComplete(mCurrentDownloadTask);
-                } else if(mCurrentDownloadTask.getStatus() == DownloadTask.INCOMPLETE){
-                    broadcastTaskError(mCurrentDownloadTask);
                 }
             }
 
@@ -498,6 +496,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
         public void onFileError(String url) {
             mCurrentDownloadTask.setStatus(DownloadTask.INCOMPLETE);
             mCurrentDownloadItem.setStatus(DownloadItem.STATUS_ERROR);
+            broadcastTaskError(mCurrentDownloadTask);
         }
 
         private void getTaskDownloadSize(DownloadTask downloadTask) {

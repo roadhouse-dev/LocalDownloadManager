@@ -21,6 +21,16 @@ import java.util.concurrent.PriorityBlockingQueue;
 
 import timber.log.Timber;
 
+/**
+ * A queue which saves it's state to disk in a background thread. This provides in memory queue operation
+ * speed with the benefit of disk persistence.
+ *
+ * It's important to call flushChanges before removing the reference to a PersistentQueue instance,
+ * failure to do this will likely result in state loss when loading the queue from persistent storage.
+ * It may not happen today, or tomorrow, but it will eventually happen.
+ *
+ * @param <E> The class type to be stored in the queue
+ */
 public class PersistentQueue<E extends Serializable> implements Queue<E> {
 
     private Queue<E> mInMemoryQueue;

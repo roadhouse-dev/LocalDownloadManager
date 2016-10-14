@@ -6,6 +6,10 @@ import android.support.v4.content.WakefulBroadcastReceiver;
 
 import au.com.roadhouse.localdownloadmanager.toolkit.DownloadStatusService;
 
+/**
+ * An internal broadcast receiver which forwards download status broacasts to a handler service
+ * defined by the encompassing app.
+ */
 public class DownloadStateBroadcastReceiver extends WakefulBroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {

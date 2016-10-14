@@ -12,6 +12,7 @@ import au.com.roadhouse.localdownloadmanager.LocalDownloadManager;
 import au.com.roadhouse.localdownloadmanager.model.DownloadItem;
 import au.com.roadhouse.localdownloadmanager.model.DownloadTask;
 import au.com.roadhouse.localdownloadmanager.toolkit.DownloadBroadcastReceiver;
+import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Timber.plant(new Timber.DebugTree());
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
