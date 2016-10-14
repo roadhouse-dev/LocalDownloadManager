@@ -16,7 +16,6 @@ public class SerializablePendingIntent implements Serializable {
     private static final int TYPE_ACTIVITY = 0;
     private static final int TYPE_SERVICE = 1;
     private static final int TYPE_BROADCAST = 2;
-    private static final String TAG = "SPendingIntent";
 
     private SerializableIntent mSerializableIntent;
     private int mType;

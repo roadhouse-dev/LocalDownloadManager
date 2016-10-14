@@ -18,6 +18,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <service android:name=".DownloadHandlerService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="au.com.roadhouse.localdownloadmanager.toolkit.DownloadStatusService.ACTION_DOWNLOAD_STATUS_UPDATE"/>
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

@@ -17,7 +17,7 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
+import android.support.v4.content.LocalBroadcastManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import au.com.roadhouse.localdownloadmanager.UrlDownloadStack;
 import au.com.roadhouse.localdownloadmanager.model.DownloadItem;
 import au.com.roadhouse.localdownloadmanager.model.DownloadTask;
 import au.com.roadhouse.localdownloadmanager.model.NetworkHelper;
+import timber.log.Timber;
 
 /**
  * The main service for the LocalDownloadManager, manages downloads, notifications, and download state
@@ -43,27 +44,28 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
     private static final int NOTIFICATION_ID = 101;
 
     //Command Actions
-    public static final String ACTION_QUEUE_DOWNLOAD = "com.squizbit.filedownloaderservice.DownloadService.ACTION_QUEUE_DOWNLOAD";
-    public static final String ACTION_PAUSE_DOWNLOAD = "com.squizbit.filedownloaderservice.DownloadService.ACTION_PAUSE_DOWNLOAD";
-    public static final String ACTION_RESUME_DOWNLOAD = "com.squizbit.filedownloaderservice.DownloadService.ACTION_RESUME_DOWNLOAD";
-    public static final String ACTION_REMOVE_DOWNLOAD = "com.squizbit.filedownloaderservice.DownloadService.ACTION_REMOVE_DOWNLOAD";
-    public static final String ACTION_REMOVE_ALL_DOWNLOAD = "com.squizbit.filedownloaderservice.DownloadService.ACTION_REMOVE_ALL_DOWNLOAD";
-    public static final String ACTION_SETTINGS_NETWORK_TYPE = "com.squizbit.filedownloaderservice.DownloadService.ACTION_SETTINGS_NETWORK_TYPE";
+    public static final String ACTION_QUEUE_DOWNLOAD = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_QUEUE_DOWNLOAD";
+    public static final String ACTION_PAUSE_DOWNLOAD = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_PAUSE_DOWNLOAD";
+    public static final String ACTION_RESUME_DOWNLOAD = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_RESUME_DOWNLOAD";
+    public static final String ACTION_REMOVE_DOWNLOAD = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_REMOVE_DOWNLOAD";
+    public static final String ACTION_REMOVE_ALL_DOWNLOAD = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_REMOVE_ALL_DOWNLOAD";
+    public static final String ACTION_SETTINGS_NETWORK_TYPE = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_SETTINGS_NETWORK_TYPE";
 
     //Broadcast Actions
-    public static final String ACTION_DOWNLOAD_QUEUED = "com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_QUEUED";
-    public static final String ACTION_DOWNLOAD_PROGRESS = "com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_PROGRESS";
-    public static final String ACTION_DOWNLOAD_COMPLETE = "com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_COMPLETE";
-    public static final String ACTION_DOWNLOAD_ITEM_COMPLETE = "com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ITEM_COMPLETE";
-    public static final String ACTION_DOWNLOAD_CANCELLED = "com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_CANCELLED";
-    public static final String ACTION_DOWNLOAD_ERROR = "com.squizbit.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ERROR";
+    public static final String ACTION_DOWNLOAD_QUEUED = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_QUEUED";
+    public static final String ACTION_DOWNLOAD_PROGRESS = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_PROGRESS";
+    public static final String ACTION_DOWNLOAD_COMPLETE = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_COMPLETE";
+    public static final String ACTION_DOWNLOAD_ITEM_COMPLETE = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ITEM_COMPLETE";
+    public static final String ACTION_DOWNLOAD_CANCELLED = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_CANCELLED";
+    public static final String ACTION_DOWNLOAD_ERROR = "au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ERROR";
 
     //Extras
-    public static final String EXTRA_DOWNLOAD_TASK = "com.squizbit.filedownloaderservice.DownloadService.EXTRA_DOWNLOAD_TASK";
-    public static final String EXTRA_DOWNLOAD_TAG = "com.squizbit.filedownloaderservice.DownloadService.EXTRA_DOWNLOAD_TAG";
-    public static final String EXTRA_BYTES_DOWNLOADED = "com.squizbit.filedownloaderservice.DownloadService.EXTRA_BYTES_DOWNLOADED";
-    public static final String EXTRA_TOTAL_SIZE = "com.squizbit.filedownloaderservice.DownloadService.EXTRA_TOTAL_SIZE";
-    public static final String EXTRA_WIFI_ONLY = "com.squizbit.localdownloadmanager.DownloadService.EXTRA_WIFI_ONLY";
+    public static final String EXTRA_DOWNLOAD_TASK = "au.com.roadhouse.filedownloaderservice.DownloadService.EXTRA_DOWNLOAD_TASK";
+    public static final String EXTRA_DOWNLOAD_TAG = "au.com.roadhouse.filedownloaderservice.DownloadService.EXTRA_DOWNLOAD_TAG";
+    public static final String EXTRA_BYTES_DOWNLOADED = "au.com.roadhouse.filedownloaderservice.DownloadService.EXTRA_BYTES_DOWNLOADED";
+    public static final String EXTRA_TOTAL_SIZE = "au.com.roadhouse.filedownloaderservice.DownloadService.EXTRA_TOTAL_SIZE";
+    public static final String EXTRA_WIFI_ONLY = "au.com.roadhouse.localdownloadmanager.DownloadService.EXTRA_WIFI_ONLY";
+    public static final String EXTRA_DOWNLOAD_ITEM = "au.com.roadhouse.filedownloaderservice.DownloadService.EXTRA_DOWNLOAD_ITEM";
 
     private ServiceHandler mServiceHandler;
     private DownloadWorker mDownloadWorker;
@@ -130,7 +132,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
         mDownloadPreferences.edit()
                 .putBoolean(EXTRA_WIFI_ONLY, intent.getBooleanExtra(EXTRA_WIFI_ONLY, true))
                 .apply();
-        if (canContinueDownloading()) {
+        if (isRequestedNetworkConnectionAvailable()) {
             mDownloadWorker = new DownloadWorker();
             mDownloadWorker.start();
         } else {
@@ -139,7 +141,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
     }
 
     private void onResumeDownloads() {
-        if (canContinueDownloading()) {
+        if (isRequestedNetworkConnectionAvailable()) {
             if (mDownloadWorker == null || !mDownloadWorker.isRunning()) {
                 mDownloadWorker = new DownloadWorker();
                 mDownloadWorker.start();
@@ -151,7 +153,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
         return mDownloadPreferences.getBoolean(EXTRA_WIFI_ONLY, true);
     }
 
-    private boolean canContinueDownloading() {
+    private boolean isRequestedNetworkConnectionAvailable() {
         return (!isDownloadRestrictedToWifi() || mNetworkHelper.getCurrentConnection() == NetworkHelper.TYPE_WIFI) &&
                 mNetworkHelper.getCurrentConnection() != NetworkHelper.TYPE_NO_CONNECTION;
     }
@@ -161,15 +163,10 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
         downloadTask.setStatus(DownloadTask.PENDING);
         initDownloadItems(downloadTask);
         mTotalDownloadsQueued++;
-        broadcastAddedToQueue(downloadTask);
         addToQueue(downloadTask);
     }
 
     private void onPauseDownloads() {
-        if (mDownloadWorker != null && mDownloadWorker.mCurrentDownloadTask != null) {
-            //Reschedule the current download task or the service will stop
-            mDownloadQueue.add(mDownloadWorker.mCurrentDownloadTask);
-        }
         if (mDownloadWorker != null) {
             mDownloadWorker.stopWork();
         }
@@ -201,7 +198,8 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
     private void addToQueue(DownloadTask downloadTask) {
         downloadTask.setStatus(DownloadTask.PENDING);
         mDownloadQueue.add(downloadTask);
-        if (canContinueDownloading()) {
+        broadcastAddedToQueue(downloadTask);
+        if (isRequestedNetworkConnectionAvailable()) {
             if (mDownloadWorker == null || !mDownloadWorker.isRunning()) {
                 mDownloadWorker = new DownloadWorker();
                 mDownloadWorker.start();
@@ -211,50 +209,65 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
 
     private void broadcastAddedToQueue(DownloadTask downloadTask) {
         Intent intent = new Intent(ACTION_DOWNLOAD_QUEUED);
+        intent.setPackage(getPackageName());
+        intent.putExtra("FROM", "DownloadService");
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
 
         sendBroadcast(intent);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private void broadcastTaskProgress(DownloadTask downloadTask, long bytesDownloaded, long totalBytes) {
         Intent intent = new Intent(ACTION_DOWNLOAD_PROGRESS);
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
+        intent.setPackage(getPackageName());
         intent.putExtra(EXTRA_BYTES_DOWNLOADED, bytesDownloaded);
         intent.putExtra(EXTRA_TOTAL_SIZE, totalBytes);
 
         sendBroadcast(intent);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    private void broadcastTaskItemComplete(DownloadTask downloadTask) {
-        Log.d(TAG, "broadcastTaskItemComplete: Broadcasting downloadtask complete");
+    private void broadcastTaskItemComplete(DownloadTask downloadTask, DownloadItem downloadItem) {
+        Timber.d("broadcastTaskItemComplete: Broadcasting downloadtask complete");
         Intent intent = new Intent(ACTION_DOWNLOAD_ITEM_COMPLETE);
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
+        intent.putExtra(EXTRA_DOWNLOAD_ITEM, (Serializable) downloadItem);
 
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+        intent.setPackage(getPackageName());
         sendBroadcast(intent);
     }
 
     private void broadcastTaskCancelled(DownloadTask downloadTask) {
-        Log.d(TAG, "broadcastTaskItemComplete: Broadcasting downloadtask complete");
+        Timber.d("broadcastTaskItemComplete: Broadcasting downloadtask complete");
         Intent intent = new Intent(ACTION_DOWNLOAD_CANCELLED);
+        sendBroadcast(intent);
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
 
-        sendBroadcast(intent);
+        intent.setPackage(getPackageName());
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private void broadcastTaskError(DownloadTask downloadTask) {
-        Log.d(TAG, "broadcastTaskError: Broadcasting download error");
+        Timber.d("broadcastTaskError: Broadcasting download error");
         Intent intent = new Intent(ACTION_DOWNLOAD_ERROR);
+        intent.setPackage(getPackageName());
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
 
         sendBroadcast(intent);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private void broadcastTaskComplete(DownloadTask downloadTask) {
-        Log.d(TAG, "broadcastTaskItemComplete: Broadcasting downloadtask complete");
+        Timber.d("broadcastTaskItemComplete: Broadcasting downloadtask complete");
         Intent intent = new Intent(ACTION_DOWNLOAD_COMPLETE);
+        intent.setPackage(getPackageName());
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
 
         sendBroadcast(intent);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private void initDownloadItems(DownloadTask downloadTask) {
@@ -313,11 +326,8 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy: Stopping service");
+        Timber.d( "onDestroy: Stopping service");
         if (mDownloadWorker != null) {
-            if (mDownloadWorker.mCurrentDownloadTask != null) {
-                mDownloadQueue.add(mDownloadWorker.mCurrentDownloadTask);
-            }
             mDownloadWorker.stopWork();
         }
         mNetworkHelper.unregisterForNetworkChangeEvents();
@@ -394,7 +404,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
                 mCurrentDownloadTask = mDownloadQueue.peek();
                 mIsCurrentDownloadCancelled = false;
 
-                if (mCurrentDownloadTask == null) {
+                if (mCurrentDownloadTask == null || mCurrentDownloadTask.getStatus() == DownloadTask.FINISHED) {
                     mIsRunning = false;
                     continue;
                 }
@@ -417,7 +427,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
 
                 for (int i = 0; i < downloadItems.size(); i++) {
                     mLastNotificationTime = System.currentTimeMillis();
-                    if (mCurrentDownloadTask == null || !canContinueDownloading()) {
+                    if (mCurrentDownloadTask == null || !isRequestedNetworkConnectionAvailable()) {
                         break;
                     }
 
@@ -425,19 +435,17 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
                     mDownloadStack.downloadFile(mCurrentDownloadItem.getFile(), mCurrentDownloadItem.getUrl(), this);
                 }
 
-                if (mCurrentDownloadTask != null && canContinueDownloading()) {
+                if ((mCurrentDownloadTask != null && isRequestedNetworkConnectionAvailable()) || (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING)) {
                     mDownloadQueue.poll();
-                    if (mCurrentDownloadTask.getStatus() != DownloadTask.INCOMPLETE) {
-                        mCurrentDownloadTask.setStatus(DownloadTask.FINISHED);
-                    }
-
-                    broadcastTaskComplete(mCurrentDownloadTask);
                 }
 
+                if (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING) {
+                    mCurrentDownloadTask.setStatus(DownloadTask.FINISHED);
+                    broadcastTaskComplete(mCurrentDownloadTask);
+                }
             }
 
             mNotifyManager.cancel(NOTIFICATION_ID);
-
             mServiceHandler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -453,14 +461,14 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
             mCurrentDownloadItem.setBytesDownloaded(bytesDownloaded);
 
             if (mIsCurrentDownloadCancelled) {
-                Log.d(TAG, "onFileProgress: Cancelling current download task");
+                Timber.d( "onFileProgress: Cancelling current download task");
                 mDownloadStack.stopDownload();
                 broadcastTaskCancelled(mCurrentDownloadTask);
                 mCurrentDownloadTask = null;
             } else if (!isRunning()) {
                 mDownloadStack.stopDownload();
                 mCurrentDownloadTask = null;
-                Log.d(TAG, "onFileProgress: Stopping download ");
+                Timber.d( "onFileProgress: Stopping download ");
             } else if (System.currentTimeMillis() - mLastNotificationTime >= 16) { //Don't overload the System thread with notification requests
                 double progressPercent =
                         (double) mCurrentDownloadTask.getBytesDownloaded() / (double) mCurrentDownloadTask.getDownloadSize();
@@ -481,7 +489,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
         @Override
         public void onFileComplete(String url, File tempFile) {
             mCurrentDownloadItem.setStatus(DownloadItem.STATUS_COMPLETE);
-            broadcastTaskItemComplete(mCurrentDownloadTask);
+            broadcastTaskItemComplete(mCurrentDownloadTask, mCurrentDownloadItem);
         }
 
         @Override

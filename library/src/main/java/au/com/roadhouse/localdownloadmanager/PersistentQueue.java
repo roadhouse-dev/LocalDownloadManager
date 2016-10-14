@@ -21,9 +21,17 @@ import java.util.concurrent.PriorityBlockingQueue;
 
 import timber.log.Timber;
 
+/**
+ * A queue which saves it's state to disk in a background thread. This provides in memory queue operation
+ * speed with the benefit of disk persistence.
+ *
+ * It's important to call flushChanges before removing the reference to a PersistentQueue instance,
+ * failure to do this will likely result in state loss when loading the queue from persistent storage.
+ * It may not happen today, or tomorrow, but it will eventually happen.
+ *
+ * @param <E> The class type to be stored in the queue
+ */
 public class PersistentQueue<E extends Serializable> implements Queue<E> {
-
-    private static final String TAG = "PersistentQueue";
 
     private Queue<E> mInMemoryQueue;
     private final UpdateHandler mUpdateHandler;
@@ -141,8 +149,9 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
 
     @Override
     public E poll() {
+        E item = mInMemoryQueue.poll();
         updateFileStore();
-        return mInMemoryQueue.poll();
+        return item;
     }
 
     private void updateFileStore() {
@@ -190,6 +199,8 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
                 Timber.d("flushUpdates: thread was interrupted while waiting, reaquiring latch");
             }
         }
+
+        Timber.d("flushUpdates: Flush was successful");
     }
 
     private final class UpdateHandler extends Handler {
@@ -229,7 +240,7 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
             FileOutputStream fileOutputStream = new FileOutputStream(mFile);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
             objectOutputStream.writeObject(mInMemoryQueue);
-            Timber.d(TAG, "handleMessage: Updated persistent storage");
+            Timber.d("handleMessage: Updated persistent storage");
         } catch (IOException e) {
             e.printStackTrace();
         }

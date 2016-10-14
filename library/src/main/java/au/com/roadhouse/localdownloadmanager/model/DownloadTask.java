@@ -62,6 +62,9 @@ public class DownloadTask implements Parcelable, Serializable, Comparable {
         mLabel = builder.mLabel;
         mNotificationPendingIntent = builder.mNotificationPendingIntent;
         mNotificationIcon = builder.mNotificationIcon;
+        for (int i = 0; i < builder.mDownloadUrls.size(); i++) {
+            addDownloadUrl(builder.mDownloadUrls.get(i));
+        }
     }
 
     public String getLabel() {
