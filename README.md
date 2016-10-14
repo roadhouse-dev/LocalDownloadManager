@@ -26,7 +26,7 @@ Add the dependencies:
 
 ```java 
 dependencies {
-    compile 'com.github.roadhouse-dev:LocalDownloadManager:1.0.0'
+    compile 'com.github.roadhouse-dev:LocalDownloadManager:1.0.1'
 }
 ```
 
@@ -38,118 +38,157 @@ $ ./gradlew build
 
 #Setup
 
-1 - Create a broadcast listener to receive download status updates
+1 - Extends DownloadStatusService to handle download status in a service
+
 ```java
-public class FileStatusReceiver extends BroadcastReceiver {
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        Intent serviceIntent = new Intent(context, FileStatusHandlerService.class);
-        serviceIntent.setAction(intent.getAction());
-        serviceIntent.putExtras(intent.getExtras());
-        context.startService(serviceIntent);
-    }
-
-```
-
-
-2 - Create a service which handles the file status, and moves the downloaded file to the desired directory.
-```java
-public class DownloadHandlerService extends IntentService {
+public class DownloadHandlerService extends DownloadStatusService {
 
     public static final String TAG ="OfflineFileCacheService";
 
-    public OfflineFileCacheService() {
-        super("OfflineFileCacheService");
+    public DownloadHandlerService() {
+        super("DownloadHandlerService");
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
-        if (LocalDownloadService.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) {
-            DownloadTask downloadTask = (DownloadTask) intent.getSerializableExtra(DownloadService.EXTRA_DOWNLOAD_TASK);
-            if(downloadTask.getStatus() != DownloadTask.INCOMPLETE) {
-                Timber.d( "onHandleIntent: Copying files to cache");
-                onCopyToCache(intent);
-            } else {
-                Timber.d( "onHandleIntent: Error occurred, deleting files");
-                onDownloadError(intent);
+    protected void onDownloadTaskQueued(DownloadTask downloadTask) {
+        Timber.d( "onDownloadTaskQueued: ");
+    }
+
+    @Override
+    protected void onDownloadTaskProgress(DownloadTask downloadTask, long bytesDownloaded, long totalBytes) {
+        Timber.d( "onDownloadTaskProgress: ");
+    }
+
+    @Override
+    protected void onDownloadTaskCancelled(DownloadTask downloadTask) {
+
+        //Data may have been downloaded before the task was cancelled, so lets clean it up
+        cleanupCache(downloadTask.getDownloadItems());
+    }
+
+    @Override
+    protected void onDownloadTaskError(DownloadTask downloadTask) {
+        List<DownloadItem> dowloadItemList = downloadTask.getDownloadItems();
+
+        cleanupCache(dowloadItemList);
+    }
+    @Override
+    protected void onDownloadItemComplete(DownloadTask downloadTask, DownloadItem downloadItem) {
+        //Handle each download item individually or wait until onDownloadTaskComplete triggers to handle all at once
+
+        //TODO: Copy file to expected directory
+
+        //Delete the cache data
+        downloadItem.getFile().delete();
+    }
+
+    @Override
+    protected void onDownloadTaskComplete(DownloadTask downloadTask) {
+        List<DownloadItem> dowloadItemList = downloadTask.getDownloadItems();
+        //Try to clean up data again incase we missed one
+        cleanupCache(dowloadItemList);
+    }
+
+    private void cleanupCache(List<DownloadItem> dowloadItemList) {
+        for (int i = 0; i < dowloadItemList.size(); i++) {
+
+            //Delete any downloaded cache data
+            if(dowloadItemList.get(i).getFile().exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                dowloadItemList.get(i).getFile().delete();
             }
         }
-    }
-
-    private void onDownloadError(Intent intent) {
-        DownloadTask downloadTask = (DownloadTask) intent.getSerializableExtra(DownloadService.EXTRA_DOWNLOAD_TASK);
-
-        List<DownloadItem> downloadItems = downloadTask.getDownloadItems();
-        for (int i = 0; i < downloadItems.size(); i++) {
-            DownloadItem downloadItem = downloadItems.get(i);
-
-            //clean up the downloaded files from cache
-            downloadItem.getFile().delete();
-        }
-    }
-
-    private void onCopyToDirectory(Intent intent) {
-          DownloadTask downloadTask = (DownloadTask) intent.getSerializableExtra(DownloadService.EXTRA_DOWNLOAD_TASK);
-          List<DownloadItem> downloadItems = downloadTask.getDownloadItems();
-          for (int i = 0; i < downloadItems.size(); i++) {
-              DownloadItem downloadItem = downloadItems.get(i);
-              
-              try {
-                   String fileName = Uri.parse(downloadItem.getUrl()).getLastPathSegment();
-                   File outputFile = new File(context.getFilesDir(), fileName);
-                   FileInputStream inputFileStream = new FileInputStream(downloadItem.getFile());
-                   
-                   byte[] copyBuffer = new byte[1024];
-                   FileOutputStream outputStream = new FileOutputStream(file);
-                   int remaining;
-                   while ((remaining = inputStream.read(fileBuffer)) != -1) {
-                       outputStream.write(fileBuffer, 0, remaining);
-                   }
-                   inputStream.close();
-                   outputStream.close();
-                                                
-                   
-              } catch (IOException e) {
-                  Log.w(TAG, "put: Failed to copy temp file over to cache directory", e);
-                  e.printStackTrace();
-              } 
-  
-              //clean up the downloaded files from cache
-              downloadItem.getFile().delete();
-          }
     }
 }
 ```
 
 
-3 - Alter your AndroidManifest with your receiver and service
+2 - Alter your AndroidManifest with your receiver and service
 
 ```xml
 <application>
        ...
-        <receiver android:name=".service.OfflineFileStatusReceiver">
+        <service android:name=".DownloadHandlerService"
+            android:exported="false">
             <intent-filter>
-                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_COMPLETE"/>
-                <action android:name="au.com.roadhouse.filedownloaderservice.DownloadService.ACTION_DOWNLOAD_ERROR"/>
+                <action android:name="au.com.roadhouse.localdownloadmanager.toolkit.DownloadStatusService.ACTION_DOWNLOAD_STATUS_UPDATE"/>
             </intent-filter>
-        </receiver>
-
-        <service android:name=".service.OfflineFileCacheService"/>
-
-        <provider
-            android:name="android.support.v4.content.FileProvider"
-            android:authorities="${applicationId}.file.provider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/offile_file_paths" />
-        </provider>
+        </service>
         ...
 </application>
 ```
 
+
 #Sample Usage
+
+Receive download update status changes in an activity or fragment
+
+```java
+public class MyActivity extends Activity {
+
+    public void onCreate(...){
+        ...
+        mDownloadStatusReceiver = new MyDownloadStatusReciever();
+        ...
+    }
+    
+    public void onStart(){
+        ...
+        //Register for broadcasts (Must use the LocalBroadcastManager here)
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            mDownloadStatusReciever, 
+            mDownloadStatusReciever.buildIntentFilter());
+        ...
+    }
+    
+     public void onStop(){
+            ...
+             //Unregister when done
+            LocalBroadcastManager.getInstance(this).registerReceiver(
+                mDownloadStatusReciever, 
+                mDownloadStatusReciever.buildIntentFilter());
+            ...
+        }
+    
+
+
+    //Implement DownloadBroadcastReciever
+    private class MyDownloadStatusReceiver extends DownloadBroadcastReceiver{
+     @Override
+            protected void onDownloadTaskQueuedReceived(DownloadTask downloadTask) {
+                ...
+            }
+    
+            @Override
+            protected void onDownloadTaskProgressReceived(DownloadTask downloadTask, long bytesDownloaded, long totalBytes) {
+                ...
+            }
+    
+            @Override
+            protected void onDownloadTaskCancelledReceived(DownloadTask downloadTask) {
+                ...
+            }
+    
+            @Override
+            protected void onDownloadTaskErrorReceived(DownloadTask downloadTask) {
+               ...
+            }
+    
+            @Override
+            protected void onDownloadItemCompleteReceived(DownloadTask downloadTask, DownloadItem downloadItem) {
+               ...
+            }
+    
+            @Override
+            protected void onDownloadTaskCompleteReceived(DownloadTask downloadTask) {
+               ...
+            }
+    }
+
+}
+
+```
+
 
 Download a single url
 
