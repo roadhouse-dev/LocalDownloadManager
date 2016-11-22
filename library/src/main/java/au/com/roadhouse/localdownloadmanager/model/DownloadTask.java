@@ -8,6 +8,7 @@ import android.support.annotation.DrawableRes;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import au.com.roadhouse.localdownloadmanager.R;
 import au.com.roadhouse.localdownloadmanager.internal.SerializablePendingIntent;
@@ -58,6 +59,7 @@ public class DownloadTask implements Parcelable, Serializable, Comparable {
     };
 
     private DownloadTask(Builder builder) {
+        mTag = builder.mTag;
         mPriority = builder.mPriority;
         mLabel = builder.mLabel;
         mNotificationPendingIntent = builder.mNotificationPendingIntent;
@@ -199,6 +201,7 @@ public class DownloadTask implements Parcelable, Serializable, Comparable {
      * Builds a new DownloadTask instance
      */
     public static class Builder {
+        private final String mTag;
         private int mNotificationIcon = R.drawable.ic_default_notify;
         private int mPriority;
         private String mLabel;
@@ -212,6 +215,7 @@ public class DownloadTask implements Parcelable, Serializable, Comparable {
          */
         public Builder(String label){
             mLabel = label;
+            mTag = UUID.randomUUID().toString();
         }
 
         /**
