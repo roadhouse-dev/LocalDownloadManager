@@ -39,17 +39,12 @@ public class LocalDownloadManager {
     /**
      * Adds a new download task to the DownloadService
      * @param downloadTask The download task to add to the queue
-     * @return A unique key which can be used to track the download task throughout it's lifecycle
      */
-    public String addDownloadToQueue( DownloadTask downloadTask) {
-        String tag = UUID.randomUUID().toString();
-        downloadTask.setTag(tag);
+    public void addDownloadToQueue( DownloadTask downloadTask) {
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.setAction(ACTION_QUEUE_DOWNLOAD);
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
         mContext.startService(intent);
-
-        return tag;
     }
 
     /**
