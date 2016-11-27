@@ -36,6 +36,11 @@ public class DownloadTask implements Parcelable, Serializable, Comparable {
         mNotificationIcon = R.drawable.ic_default_notify;
     }
 
+    public DownloadTask(String tag){
+        this();
+        mTag = tag;
+    }
+
     private DownloadTask(Parcel in) {
         mPriority = in.readInt();
         mTag = in.readString();
@@ -79,11 +84,6 @@ public class DownloadTask implements Parcelable, Serializable, Comparable {
      */
     public void setLabel(String label) {
         mLabel = label;
-    }
-
-
-    public void setTag(String tag) {
-        mTag = tag;
     }
 
     public String getTag() {

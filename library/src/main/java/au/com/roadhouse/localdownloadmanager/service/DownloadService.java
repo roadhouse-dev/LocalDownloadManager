@@ -174,8 +174,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
 
     private void onRemoveDownload(Intent intent) {
         String tag = intent.getStringExtra(EXTRA_DOWNLOAD_TAG);
-        DownloadTask downloadTask = new DownloadTask();
-        downloadTask.setTag(tag);
+        DownloadTask downloadTask = new DownloadTask(tag);
 
         if (!mDownloadQueue.remove(downloadTask)) {
             if (mDownloadWorker != null && downloadTask.equals(mDownloadWorker.getCurrentDownloadTask())) {
