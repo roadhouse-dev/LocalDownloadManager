@@ -159,7 +159,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
     }
 
     private void onQueueDownload(Intent intent) {
-        DownloadTask downloadTask = intent.getParcelableExtra(EXTRA_DOWNLOAD_TASK);
+        DownloadTask downloadTask = (DownloadTask) intent.getSerializableExtra(EXTRA_DOWNLOAD_TASK);
         downloadTask.setStatus(DownloadTask.PENDING);
         initDownloadItems(downloadTask);
         mTotalDownloadsQueued++;

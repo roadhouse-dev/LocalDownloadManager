@@ -1,3 +1,5 @@
+[![Release](https://jitpack.io/v/roadhouse-dev/LocalDownloadManager.svg)](https://jitpack.io/#roadhouse-dev/LocalDownloadManager)
+
 # LocalDownloadManager
 
 An configurable but easy to use download service library
@@ -103,7 +105,7 @@ public class DownloadHandlerService extends DownloadStatusService {
 ```
 
 
-2 - Alter your AndroidManifest with your receiver and service
+2 - Alter your AndroidManifest with your receiver
 
 ```xml
 <application>
