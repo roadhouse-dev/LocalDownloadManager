@@ -178,7 +178,8 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
                 FileInputStream fileInputStream = new FileInputStream(mFile);
                 ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
                 //noinspection unchecked
-                mInMemoryQueue = (Queue<E>) objectInputStream.readObject();
+                mInMemoryQueue = (Queue<E>) objectInputStream.readObject(); 
+                objectInputStream.close();
             } catch (IOException | ClassNotFoundException e) {
                 mInMemoryQueue = new PriorityBlockingQueue<>();
             }
@@ -240,6 +241,8 @@ public class PersistentQueue<E extends Serializable> implements Queue<E> {
             FileOutputStream fileOutputStream = new FileOutputStream(mFile);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
             objectOutputStream.writeObject(mInMemoryQueue);
+            objectOutputStream.flush();
+            objectOutputStream.close();
             Timber.d("handleMessage: Updated persistent storage");
         } catch (IOException e) {
             e.printStackTrace();
