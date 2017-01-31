@@ -1,3 +1,5 @@
+[![Release](https://jitpack.io/v/roadhouse-dev/LocalDownloadManager.svg)](https://jitpack.io/#roadhouse-dev/LocalDownloadManager)
+
 # LocalDownloadManager
 
 An configurable but easy to use download service library

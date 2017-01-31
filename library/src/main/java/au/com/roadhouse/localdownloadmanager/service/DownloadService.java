@@ -399,13 +399,15 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
         public void run() {
             while (mIsRunning) {
                 //We don't remove the current task from the queue as we want it to be persisted in case
-                //the service is killed. It will be removed after it is complete
+                //the service is killed. It will be removed after it has been added to the download stack
                 mCurrentDownloadTask = mDownloadQueue.peek();
                 mIsCurrentDownloadCancelled = false;
 
-                if (mCurrentDownloadTask == null || mCurrentDownloadTask.getStatus() == DownloadTask.FINISHED) {
+                if (mCurrentDownloadTask.getStatus() == DownloadTask.FINISHED) {
                     mIsRunning = false;
                     continue;
+                } else if (mIsCurrentDownloadCancelled) {
+                    break;
                 }
 
                 mNotificationBuilder.setContentTitle(mCurrentDownloadTask.getLabel());
@@ -431,14 +433,13 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
                     }
 
                     mCurrentDownloadItem = downloadItems.get(i);
+                    //This is a blocking call
                     mDownloadStack.downloadFile(mCurrentDownloadItem.getFile(), mCurrentDownloadItem.getUrl(), this);
                 }
 
-                if ((mCurrentDownloadTask != null && isRequestedNetworkConnectionAvailable()) || (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING)) {
+                if (isRequestedNetworkConnectionAvailable() || (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING)) {
                     mDownloadQueue.poll();
-                }
-
-                if (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING) {
+                } else if (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING) {
                     mCurrentDownloadTask.setStatus(DownloadTask.FINISHED);
                     broadcastTaskComplete(mCurrentDownloadTask);
                 }
@@ -463,10 +464,8 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
                 Timber.d( "onFileProgress: Cancelling current download task");
                 mDownloadStack.stopDownload();
                 broadcastTaskCancelled(mCurrentDownloadTask);
-                mCurrentDownloadTask = null;
             } else if (!isRunning()) {
                 mDownloadStack.stopDownload();
-                mCurrentDownloadTask = null;
                 Timber.d( "onFileProgress: Stopping download ");
             } else if (System.currentTimeMillis() - mLastNotificationTime >= 16) { //Don't overload the System thread with notification requests
                 double progressPercent =
