@@ -403,7 +403,7 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
                 mCurrentDownloadTask = mDownloadQueue.peek();
                 mIsCurrentDownloadCancelled = false;
 
-                if (mCurrentDownloadTask.getStatus() == DownloadTask.FINISHED) {
+                if (mCurrentDownloadTask == null || mCurrentDownloadTask.getStatus() == DownloadTask.FINISHED) {
                     mIsRunning = false;
                     continue;
                 } else if (mIsCurrentDownloadCancelled) {
