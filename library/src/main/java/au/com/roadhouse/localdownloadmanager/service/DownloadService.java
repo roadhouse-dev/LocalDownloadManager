@@ -439,7 +439,6 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
 
                 if (isRequestedNetworkConnectionAvailable() || (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING)) {
                     mDownloadQueue.poll();
-                } else if (mCurrentDownloadTask.getStatus() == DownloadTask.DOWNLOADING) {
                     mCurrentDownloadTask.setStatus(DownloadTask.FINISHED);
                     broadcastTaskComplete(mCurrentDownloadTask);
                 }
