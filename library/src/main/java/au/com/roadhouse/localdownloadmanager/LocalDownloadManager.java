@@ -2,6 +2,7 @@ package au.com.roadhouse.localdownloadmanager;
 
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.content.ContextCompat;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public class LocalDownloadManager {
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.setAction(ACTION_QUEUE_DOWNLOAD);
         intent.putExtra(EXTRA_DOWNLOAD_TASK, (Serializable) downloadTask);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
     }
 
     /**
@@ -53,7 +54,7 @@ public class LocalDownloadManager {
     public void pauseDownloads() {
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.setAction(ACTION_PAUSE_DOWNLOAD);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
         Timber.d("pauseDownloads: pausing downloads");
     }
 
@@ -63,7 +64,7 @@ public class LocalDownloadManager {
     public void resumeDownloads() {
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.setAction(ACTION_RESUME_DOWNLOAD);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
         Timber.d("resumeDownloads: resuming downloads");
     }
 
@@ -75,7 +76,7 @@ public class LocalDownloadManager {
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.setAction(ACTION_REMOVE_DOWNLOAD);
         intent.putExtra(EXTRA_DOWNLOAD_TAG, tag);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
         Timber.d("removeDownload: removing downloads with tag %s", tag);
     }
 
@@ -85,7 +86,7 @@ public class LocalDownloadManager {
     public void removeAllDownloads(){
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.setAction(ACTION_REMOVE_ALL_DOWNLOAD);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
         Timber.d("removeAllDownloads: All pending and inprogress downloads have been removed");
     }
 
@@ -97,7 +98,7 @@ public class LocalDownloadManager {
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.setAction(ACTION_SETTINGS_NETWORK_TYPE);
         intent.putExtra(EXTRA_WIFI_ONLY, wifiOnlyDownload);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
         Timber.d("setWifiOnlyDownload: " + (wifiOnlyDownload ? "Restricting download to wifi" : "Unrestricting download"));
     }
 }

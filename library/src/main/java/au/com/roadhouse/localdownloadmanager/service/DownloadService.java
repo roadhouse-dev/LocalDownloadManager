@@ -1,5 +1,6 @@
 package au.com.roadhouse.localdownloadmanager.service;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.app.job.JobInfo;
@@ -41,6 +42,7 @@ import timber.log.Timber;
 public class DownloadService extends Service implements NetworkHelper.OnNetworkStateChangeListener {
 
     private static final String TAG = "DownloadService";
+    private static final String CHANNEL_ID = "NotificationChannelId";
     private static final int NOTIFICATION_ID = 101;
 
     //Command Actions
@@ -91,9 +93,19 @@ public class DownloadService extends Service implements NetworkHelper.OnNetworkS
         mNetworkHelper = new NetworkHelper(this);
         mNetworkHelper.registerForNetworkChangeEvents(this);
         mNotifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationBuilder = new NotificationCompat.Builder(this);
+        mNotificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID);
         mNotificationBuilder.setContentTitle("Picture Download")
                 .setContentText("Download in progress");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.download_channel_name);
+            String description = getString(R.string.download_channel_description);
+            int importance = NotificationManager.IMPORTANCE_LOW;
+            NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+            mChannel.setDescription(description);
+            mNotifyManager.createNotificationChannel(mChannel);
+        }
+        startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
     }
 
     @Override
